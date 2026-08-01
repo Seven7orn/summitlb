@@ -249,7 +249,7 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
 .gg-btn:active{opacity:.85}
 .gg-err{min-height:18px;margin-top:12px;font-size:13px;color:#FF3B30}
 
-/* ADMIN (home only) */
+/* STAFF / ADMIN (home) */
 .adminfab{position:absolute;right:calc(10px + var(--sar));bottom:calc(10px + var(--sab));z-index:4;padding:6px 10px;font-size:11px;font-weight:600;letter-spacing:.02em;color:rgba(255,255,255,.55);background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);border-radius:8px;backdrop-filter:blur(6px)}
 .adminfab:active{opacity:.75}
 .adminfab.on{color:#fff;background:rgba(90,169,255,.28);border-color:rgba(90,169,255,.45)}
@@ -257,9 +257,18 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
 .admintools.on{display:flex}
 .admintools button{padding:8px 12px;font-size:12px;font-weight:600;border-radius:8px;background:rgba(28,34,43,.92);color:var(--txt);border:1px solid var(--border);text-align:left;backdrop-filter:blur(8px)}
 .admintools button:active{opacity:.8}
+
+/* Role UI: viewer=read-only, staff=add, admin=add+delete */
+body.role-viewer .need-staff,
+body.role-viewer .need-admin{display:none!important}
+body.role-staff .need-admin{display:none!important}
+body.role-viewer .ned-tb,
+body.role-viewer #neddel,
+body.role-viewer .ned-bot .nbtn-s{display:none!important}
+body.role-staff #neddel{display:none!important}
 </style>
 </head>
-<body>
+<body class="role-viewer">
 
 <!-- HOME -->
 <div id="sh" class="on">
@@ -273,13 +282,13 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
       <div class="htitle" id="htitle">PRODUCT LIBRARY</div>
       <div class="hsub" id="hsub">Windows &amp; Doors &middot; Brea, CA</div>
     </div>
-    <button class="hgear" type="button" onclick="openMod('homeset')" aria-label="Home settings">⚙️</button>
+    <button class="hgear need-admin" type="button" onclick="openMod('homeset')" aria-label="Home settings">⚙️</button>
   </div>
   <div class="catgrid" id="catgrid"></div>
-  <button type="button" class="adminfab" id="adminfab" onclick="onAdminFab()">管理</button>
+  <button type="button" class="adminfab" id="adminfab" onclick="onAdminFab()">登录</button>
   <div class="admintools" id="admintools">
-    <button type="button" onclick="openMod('passset')">⚙ 密码设置</button>
-    <button type="button" onclick="exitAdminMode()">退出管理</button>
+    <button type="button" class="need-admin" onclick="openMod('passset')">⚙ 密码设置</button>
+    <button type="button" onclick="exitRoleMode()">退出登录</button>
   </div>
 </div>
 
@@ -301,7 +310,7 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
   <div class="nav">
     <button class="back" onclick="go('home')"><span class="bch">&#8249;</span>Home</button>
     <div class="ntitle">Photos</div>
-    <div class="nright"><button class="nact" onclick="newFolder('photo')">+ Folder</button></div>
+    <div class="nright"><button class="nact need-staff" onclick="newFolder('photo')">+ Folder</button></div>
   </div>
   <div class="flist" id="photo-flist" style="padding-top:8px"></div>
 </div>
@@ -312,8 +321,8 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
     <button class="back" onclick="go('albums');renderFolders('photo')"><span class="bch">&#8249;</span>Photos</button>
     <div class="ntitle" id="pgtitle">Folder</div>
     <div class="nright">
-      <button id="pgedit" class="nact" onclick="togEM('pg')">Edit</button>
-      <label class="nact nact-add">Add<input type="file" accept="image/*" multiple style="display:none" onchange="addToFolder('photo',this)"></label>
+      <button id="pgedit" class="nact need-admin" onclick="togEM('pg')">Edit</button>
+      <label class="nact nact-add need-staff">Add<input type="file" accept="image/*" multiple style="display:none" onchange="addToFolder('photo',this)"></label>
     </div>
   </div>
   <div class="imgrid" id="pgrid"></div>
@@ -324,7 +333,7 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
   <div class="nav">
     <button class="back" onclick="go('home')"><span class="bch">&#8249;</span>Home</button>
     <div class="ntitle">Videos</div>
-    <div class="nright"><button class="nact" onclick="newFolder('video')">+ Folder</button></div>
+    <div class="nright"><button class="nact need-staff" onclick="newFolder('video')">+ Folder</button></div>
   </div>
   <div class="flist" id="video-flist" style="padding-top:8px"></div>
 </div>
@@ -335,9 +344,9 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
     <button class="back" onclick="go('videos');renderFolders('video')"><span class="bch">&#8249;</span>Videos</button>
     <div class="ntitle" id="vgtitle">Folder</div>
     <div class="nright">
-      <button id="vgedit" class="nact" onclick="togEM('vg')">Edit</button>
-      <button class="nact" type="button" onclick="addVideoLink()">Link</button>
-      <label class="nact nact-add">Add<input type="file" id="video-file-input" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/3gpp,video/3gpp2,video/avi,video/x-msvideo,video/ogg,video/mpeg,video/x-matroska,video/mp2t,video/x-flv,video/x-ms-wmv,.mp4,.m4v,.mov,.qt,.webm,.3gp,.3g2,.avi,.mkv,.ogv,.ogg,.mpeg,.mpg,.m2ts,.ts,.flv,.wmv" multiple style="display:none" onchange="addVideos(this)"></label>
+      <button id="vgedit" class="nact need-admin" onclick="togEM('vg')">Edit</button>
+      <button class="nact need-staff" type="button" onclick="addVideoLink()">Link</button>
+      <label class="nact nact-add need-staff">Add<input type="file" id="video-file-input" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/3gpp,video/3gpp2,video/avi,video/x-msvideo,video/ogg,video/mpeg,video/x-matroska,video/mp2t,video/x-flv,video/x-ms-wmv,.mp4,.m4v,.mov,.qt,.webm,.3gp,.3g2,.avi,.mkv,.ogv,.ogg,.mpeg,.mpg,.m2ts,.ts,.flv,.wmv" multiple style="display:none" onchange="addVideos(this)"></label>
     </div>
   </div>
   <div class="imgrid" id="vgrid"></div>
@@ -375,8 +384,8 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
     <button class="back" onclick="go('home')"><span class="bch">&#8249;</span>Home</button>
     <div class="ntitle">3D Models</div>
     <div class="nright">
-      <button id="mdedit" class="nact" onclick="togEM('md')">Edit</button>
-      <label class="nact">Add .glb<input type="file" accept=".glb,.gltf" multiple style="display:none" onchange="addModels(this)"></label>
+      <button id="mdedit" class="nact need-admin" onclick="togEM('md')">Edit</button>
+      <label class="nact need-staff">Add .glb<input type="file" accept=".glb,.gltf" multiple style="display:none" onchange="addModels(this)"></label>
     </div>
   </div>
   <div class="imgrid" id="mdgrid" style="padding:4px 4px 0"></div>
@@ -403,7 +412,7 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
   <div class="nav">
     <button class="back" onclick="go('home')"><span class="bch">&#8249;</span>Home</button>
     <div class="ntitle">Project Cases</div>
-    <div class="nright"><button class="nact" onclick="newFolder('case')">+ Folder</button></div>
+    <div class="nright"><button class="nact need-staff" onclick="newFolder('case')">+ Folder</button></div>
   </div>
   <div class="flist" id="case-flist" style="padding-top:8px"></div>
 </div>
@@ -414,9 +423,9 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
     <button class="back" onclick="go('cases');renderFolders('case')"><span class="bch">&#8249;</span>Cases</button>
     <div class="ntitle" id="cgtitle">Folder</div>
     <div class="nright">
-      <button id="cgedit" class="nact" onclick="togEM('cg')">Edit</button>
-      <label class="nact">Photo<input type="file" accept="image/*" multiple style="display:none" onchange="addToFolder('case',this)"></label>
-      <label class="nact">Video<input type="file" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/3gpp,video/avi,video/ogg,video/mpeg,video/x-matroska,.mp4,.m4v,.mov,.webm,.3gp,.avi,.mkv,.ogv,.mpeg,.mpg" multiple style="display:none" onchange="addToFolder('case',this,'video')"></label>
+      <button id="cgedit" class="nact need-admin" onclick="togEM('cg')">Edit</button>
+      <label class="nact need-staff">Photo<input type="file" accept="image/*" multiple style="display:none" onchange="addToFolder('case',this)"></label>
+      <label class="nact need-staff">Video<input type="file" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/3gpp,video/avi,video/ogg,video/mpeg,video/x-matroska,.mp4,.m4v,.mov,.webm,.3gp,.avi,.mkv,.ogv,.mpeg,.mpg" multiple style="display:none" onchange="addToFolder('case',this,'video')"></label>
     </div>
   </div>
   <div class="imgrid" id="cgrid"></div>
@@ -428,7 +437,7 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
   <div class="nav">
     <button class="back" onclick="go('home')"><span class="bch">&#8249;</span>Home</button>
     <div class="ntitle">Notes</div>
-    <div class="nright"><button class="nact" onclick="openNed(null)">+ New</button></div>
+    <div class="nright"><button class="nact need-staff" onclick="openNed(null)">+ New</button></div>
   </div>
   <div class="notelist" id="notelist"></div>
 </div>
@@ -463,8 +472,8 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
       <textarea id="floattext" placeholder="Type here..."></textarea>
     </div>
     <div class="ned-bot">
-      <button class="nbtn nbtn-d" id="neddel" style="display:none;flex:0 0 auto;padding:10px 16px" onclick="delNote()">&#128465; Delete</button>
-      <button class="nbtn nbtn-s" onclick="saveNote()">&#128190; Save Note</button>
+      <button class="nbtn nbtn-d need-admin" id="neddel" style="display:none;flex:0 0 auto;padding:10px 16px" onclick="delNote()">&#128465; Delete</button>
+      <button class="nbtn nbtn-s need-staff" onclick="saveNote()">&#128190; Save Note</button>
     </div>
   </div>
 </div>
@@ -474,7 +483,7 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
   <div class="nav">
     <button class="back" onclick="go('home')"><span class="bch">&#8249;</span>Home</button>
     <div class="ntitle">Info &amp; Docs</div>
-    <div class="nright"><button class="nact" onclick="openMod('addprod')">+ Product</button></div>
+    <div class="nright"><button class="nact need-staff" onclick="openMod('addprod')">+ Product</button></div>
   </div>
   <div class="infowrap">
     <div class="pricebar" onclick="tglPrice()">
@@ -485,7 +494,7 @@ input,textarea,select{font-family:inherit;outline:none;font-size:16px}
     <div id="prodcards"></div>
     <div class="sechd">&#128196; Documents &amp; Catalogs</div>
     <div id="pdflist"></div>
-    <label class="addbtn">&#10133; Add PDF / Document<input type="file" accept=".pdf,.doc,.docx" multiple style="display:none" onchange="addPDF(this)"></label>
+    <label class="addbtn need-staff">&#10133; Add PDF / Document<input type="file" accept=".pdf,.doc,.docx" multiple style="display:none" onchange="addPDF(this)"></label>
   </div>
 </div>
 
@@ -783,11 +792,17 @@ function addVideos(inp){
 const PIN='0000';
 /* Access passwords — localStorage overrides these defaults when set */
 const DEFAULT_GUEST_PASS='summit2026';
+const DEFAULT_STAFF_PASS='staff0000';
 const DEFAULT_ADMIN_PASS='admin0000';
 const LS_GUEST_PASS='guestPass';
+const LS_STAFF_PASS='staffPass';
 const LS_ADMIN_PASS='adminPass';
 const SS_GUEST_UNLOCKED='summitGuestUnlocked';
-const SS_ADMIN_MODE='summitAdminMode';
+const SS_ROLE='summitRole';
+const SS_ADMIN_MODE='summitAdminMode'; /* legacy migrate → admin */
+const ROLE_VIEWER='viewer';
+const ROLE_STAFF='staff';
+const ROLE_ADMIN='admin';
 const CATCOLORS=['#2C4A6E','#1A3A5C','#2E5E8C','#1E4D7B','#163D63','#243F5A'];
 const CATDEF=[
   {id:'albums',lbl:'PHOTOS',ico:'📷'},
@@ -988,6 +1003,12 @@ var modalCtx={};
 function openMod(type,idx){
   modalCtx={type:type,idx:idx};
   var box=document.getElementById('modbox'),html='';
+  if(type==='homeset'||type==='hero'||type==='cat'||type==='editprod'||type==='editprice'||type==='passset'){
+    if(!requireAdmin())return;
+  }
+  if(type==='addprod'||type==='addprice'||type==='renamenote'){
+    if(!requireAdd())return;
+  }
   if(type==='homeset'){
     html='<div class="modttl">⚙️ Home Settings</div>'
       +'<button type="button" class="setrow" onclick="openMod(\'hero\')">🖼 Hero Banner — title, logo, background</button>';
@@ -996,18 +1017,20 @@ function openMod(type,idx){
     });
     html+='<div class="modacts"><button class="mdbtn mdbtn-c" onclick="closeMod()">Close</button></div>';
   }else if(type==='passset'){
-    if(!isAdminMode()){toast('Admin mode required');return;}
     html='<div class="modttl">密码设置</div>'
       +'<div class="mf"><label>当前管理员密码（必填）</label><input id="m-cur-admin" type="password" autocomplete="current-password"></div>'
       +'<div class="mf"><label>新访客密码</label><input id="m-new-guest" type="password" autocomplete="new-password" placeholder="留空则不修改"></div>'
       +'<div class="mf"><label>确认新访客密码</label><input id="m-new-guest2" type="password" autocomplete="new-password"></div>'
+      +'<div class="mf"><label>新同事密码</label><input id="m-new-staff" type="password" autocomplete="new-password" placeholder="留空则不修改"></div>'
+      +'<div class="mf"><label>确认新同事密码</label><input id="m-new-staff2" type="password" autocomplete="new-password"></div>'
       +'<div class="mf"><label>新管理员密码</label><input id="m-new-admin" type="password" autocomplete="new-password" placeholder="留空则不修改"></div>'
       +'<div class="mf"><label>确认新管理员密码</label><input id="m-new-admin2" type="password" autocomplete="new-password"></div>'
       +'<div class="modacts"><button class="mdbtn mdbtn-c" onclick="closeMod()">Cancel</button><button class="mdbtn mdbtn-s" onclick="savePassSettings()">Save</button></div>';
   }else if(type==='adminlogin'){
-    html='<div class="modttl">管理员验证</div>'
-      +'<div class="mf"><label>管理员密码</label><input id="m-admin-pass" type="password" autocomplete="current-password" placeholder="Admin password"></div>'
-      +'<div class="modacts"><button class="mdbtn mdbtn-c" onclick="closeMod()">Cancel</button><button class="mdbtn mdbtn-s" onclick="tryAdminUnlock()">Enter</button></div>';
+    html='<div class="modttl">同事 / 管理员登录</div>'
+      +'<div class="mf"><label>密码</label><input id="m-admin-pass" type="password" autocomplete="current-password" placeholder="Staff or admin password"></div>'
+      +'<p style="font-size:12px;color:var(--txt3);margin:-4px 0 12px;line-height:1.4">同事可添加内容；管理员可删除与改设置。</p>'
+      +'<div class="modacts"><button class="mdbtn mdbtn-c" onclick="closeMod()">Cancel</button><button class="mdbtn mdbtn-s" onclick="tryRoleUnlock()">Enter</button></div>';
   }else if(type==='hero'){
     var h=D.hero;
     html='<div class="modttl">Edit Hero Banner</div>'
@@ -1060,11 +1083,13 @@ function openMod(type,idx){
 function closeMod(){document.getElementById('modov').classList.remove('on');}
 function prevFile(inp,nameId){if(inp.files[0]){inp._file=inp.files[0];document.getElementById(nameId).textContent=inp.files[0].name;}}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function delProdAt(i){D.info.products.splice(i,1);sv();renderInfo();closeMod();toast('Product deleted');}
-function delPriceAt(i){D.info.pricing.splice(i,1);sv();renderInfo();closeMod();toast('Deleted');}
+function delProdAt(i){if(!requireAdmin())return;D.info.products.splice(i,1);sv();renderInfo();closeMod();toast('Product deleted');}
+function delPriceAt(i){if(!requireAdmin())return;D.info.pricing.splice(i,1);sv();renderInfo();closeMod();toast('Deleted');}
 function parseSpecs(text){return(text||'').trim().split('\n').filter(Boolean).map(function(line){var i=line.indexOf(':');return i>-1?{l:line.slice(0,i).trim(),v:line.slice(i+1).trim()}:{l:line,v:''};});}
 function saveMod(){
   var t=modalCtx.type,idx=modalCtx.idx;
+  if(t==='hero'||t==='cat'||t==='editprod'||t==='editprice'){if(!requireAdmin())return;}
+  if(t==='addprod'||t==='addprice'||t==='renamenote'){if(!requireAdd())return;}
   if(t==='hero'){
     D.hero.title=document.getElementById('m-title').value;
     D.hero.sub=document.getElementById('m-sub').value;
@@ -1125,11 +1150,12 @@ function saveMod(){
 // ═══════════════════════════════════════════
 var EM={pg:false,vg:false,md:false,cg:false};
 function togEM(k){
+  if(!requireAdmin())return;
   EM[k]=!EM[k];
   var btnIds={pg:'pgedit',vg:'vgedit',md:'mdedit',cg:'cgedit'};
   var gridIds={pg:'pgrid',vg:'vgrid',md:'mdgrid',cg:'cgrid'};
   var btn=document.getElementById(btnIds[k]);
-  btn.textContent=EM[k]?'Done':'Edit';btn.className=EM[k]?'nact-red':'nact';
+  btn.textContent=EM[k]?'Done':'Edit';btn.className=(EM[k]?'nact-red':'nact')+' need-admin';
   document.getElementById(gridIds[k]).classList.toggle('emode',EM[k]);
 }
 
@@ -1154,6 +1180,7 @@ function getEmptyId(type){return type==='video'?'vgempty':'cgempty';}
 function getListId(type){return type==='photo'?'photo-flist':type==='video'?'video-flist':'case-flist';}
 
 function newFolder(type){
+  if(!requireAdd())return;
   var n=prompt('Folder name:','');if(!n)return;
   var fd=getFolderData(type);if(fd[n]!==undefined){toast('Name exists');return;}
   fd[n]=[];sv();renderFolders(type);toast('"'+n+'" created');
@@ -1181,7 +1208,7 @@ function renderFolders(type){
     var nm=document.createElement('div');nm.className='fn';nm.textContent=name;info.appendChild(nm);
     var cnt=document.createElement('div');cnt.className='fc';cnt.textContent=items.length+' item'+(items.length!==1?'s':'');info.appendChild(cnt);
     row.appendChild(info);
-    var del=document.createElement('button');del.className='fdel';del.textContent='Delete';
+    var del=document.createElement('button');del.className='fdel need-admin';del.textContent='Delete';
     del.addEventListener('click',function(e){e.stopPropagation();delFolder(type,name);});row.appendChild(del);
     var ch=document.createElement('div');ch.style.cssText='color:var(--txt3);font-size:18px;margin-left:6px';ch.textContent='›';row.appendChild(ch);
     row.addEventListener('click',function(){openFolder(type,name);});
@@ -1190,6 +1217,7 @@ function renderFolders(type){
 }
 
 function delFolder(type,name){
+  if(!requireAdmin())return;
   if(!confirm('Delete folder "'+name+'" and all its content?'))return;
   var fd=getFolderData(type);
   (fd[name]||[]).forEach(function(item){if(item&&item.id)MediaStore.del(item.id);});
@@ -1200,7 +1228,7 @@ function openFolder(type,name){
   curFolderType=type;curFolderName=name;curItems=getFolderData(type)[name]||[];
   var k=getEMKey(type);EM[k]=false;
   var btn=document.getElementById(k==='pg'?'pgedit':k==='vg'?'vgedit':'cgedit');
-  if(btn){btn.textContent='Edit';btn.className='nact';}
+  if(btn){btn.textContent='Edit';btn.className='nact need-admin';}
   document.getElementById(getTitleId(type)).textContent=name;
   renderFolderGrid(type);go(getGridScr(type));
 }
@@ -1264,6 +1292,7 @@ function parseVideoLink(raw){
 }
 
 function addVideoLink(){
+  if(!requireAdd())return;
   if(curFolderType!=='video'||!curFolderName){toast('Open a video folder first');return;}
   var raw=prompt('Paste video link (YouTube / TikTok / 抖音 / 小红书 / Instagram / MP4):','');
   if(raw===null)return;
@@ -1370,14 +1399,15 @@ function renderFolderGrid(type){
       cell.appendChild(img);
       cell.addEventListener('click',function(){if(!EM[k]){lbItems=curItems.filter(function(x){return !isVideoItem(x,type);});lbIdx=lbItems.indexOf(item);if(lbIdx<0)lbIdx=0;openLB();}});
     }
-    var del=document.createElement('div');del.className='delbadge';del.textContent='×';
+    var del=document.createElement('div');del.className='delbadge need-admin';del.textContent='×';
     del.addEventListener('click',function(e){e.stopPropagation();delFromFolder(type,i);});cell.appendChild(del);
     g.appendChild(cell);
   });
-  g.classList.toggle('emode',EM[k]);
+  g.classList.toggle('emode',!!(EM[k]&&canDelete()));
 }
 
 function addToFolder(type,inp,kind){
+  if(!requireAdd()){inp.value='';return;}
   var fd=getFolderData(type);
   if(!curFolderName||!fd[curFolderName]){toast('Open a folder first');inp.value='';return;}
   var files=Array.from(inp.files||[]);
@@ -1405,6 +1435,7 @@ function addToFolder(type,inp,kind){
 }
 
 function delFromFolder(type,i){
+  if(!requireAdmin())return;
   if(!confirm('Delete?'))return;
   var list=getFolderData(type)[curFolderName];
   var item=list[i];
@@ -1619,7 +1650,7 @@ function closeVP(){
 // ═══════════════════════════════════════════
 function renderModels(){
   var g=document.getElementById('mdgrid'),e=document.getElementById('mdempty');
-  EM.md=false;var btn=document.getElementById('mdedit');btn.textContent='Edit';btn.className='nact';
+  EM.md=false;var btn=document.getElementById('mdedit');btn.textContent='Edit';btn.className='nact need-admin';
   if(!D.models.length){g.innerHTML='';e.style.display='block';return;}
   e.style.display='none';g.innerHTML='';
   D.models.forEach(function(m,i){
@@ -1628,15 +1659,16 @@ function renderModels(){
     bg.textContent='⬡';
     cell.appendChild(bg);
     var lbl=document.createElement('div');lbl.className='modlbl';lbl.textContent=m.name;cell.appendChild(lbl);
-    var del=document.createElement('div');del.className='delbadge';del.textContent='×';
+    var del=document.createElement('div');del.className='delbadge need-admin';del.textContent='×';
     del.addEventListener('click',function(e){e.stopPropagation();delModel(i);});cell.appendChild(del);
     cell.addEventListener('click',function(){if(!EM.md)open3dView(i);});
     g.appendChild(cell);
   });
-  g.classList.toggle('emode',EM.md);
+  g.classList.toggle('emode',!!(EM.md&&canDelete()));
 }
 
 function addModels(inp){
+  if(!requireAdd()){inp.value='';return;}
   var files=Array.from(inp.files||[]);
   if(!files.length)return;
   Promise.all(files.map(function(f){
@@ -1650,6 +1682,7 @@ function addModels(inp){
   }).catch(function(){toast('Add failed');inp.value='';});
 }
 function delModel(i){
+  if(!requireAdmin())return;
   if(!confirm('Delete?'))return;
   var m=D.models[i];if(m&&m.id)MediaStore.del(m.id);
   D.models.splice(i,1);sv();renderModels();toast('Deleted');
@@ -1744,23 +1777,24 @@ function renderNotes(){
     var nm=document.createElement('div');nm.className='notename';nm.textContent=n.name||('Note '+(i+1));info.appendChild(nm);
     card.appendChild(info);
     // Rename button
-    var renBtn=document.createElement('button');renBtn.className='ebtn';renBtn.textContent='Rename';renBtn.style.marginRight='6px';
+    var renBtn=document.createElement('button');renBtn.className='ebtn need-staff';renBtn.textContent='Rename';renBtn.style.marginRight='6px';
     renBtn.addEventListener('click',function(e){e.stopPropagation();openMod('renamenote',i);});card.appendChild(renBtn);
     // Delete button
-    var delBtn=document.createElement('button');delBtn.className='notecard-del';delBtn.textContent='Delete';
+    var delBtn=document.createElement('button');delBtn.className='notecard-del need-admin';delBtn.textContent='Delete';
     delBtn.addEventListener('click',function(e){e.stopPropagation();delNoteAt(i);});card.appendChild(delBtn);
     card.addEventListener('click',function(){openNed(i);});
     el.appendChild(card);
   });
 }
-function delNoteAt(i){if(!confirm('Delete this note?'))return;D.notes.splice(i,1);sv();renderNotes();toast('Deleted');}
+function delNoteAt(i){if(!requireAdmin())return;if(!confirm('Delete this note?'))return;D.notes.splice(i,1);sv();renderNotes();toast('Deleted');}
 
 // NOTE EDITOR
 var nctx,dcol='#1C1C1E',dtool='pen',dsz=2.5,ddrw=false,dstart={x:0,y:0};
 var curNoteIdx=null,nedImgs=[],dragImg=null,dragOff={x:0,y:0},baseSnap=null,textPos=null;
 function openNed(idx){
+  if(idx===null&&!requireAdd())return;
   curNoteIdx=idx;nedImgs=[];dragImg=null;baseSnap=null;
-  document.getElementById('neddel').style.display=idx!==null?'flex':'none';
+  document.getElementById('neddel').style.display=(idx!==null&&canDelete())?'flex':'none';
   setDT('pen');go('ned');setTimeout(function(){initNedCanvas(idx!==null?D.notes[idx]:null);},80);
 }
 function goNedBack(){go('notes');renderNotes();}
@@ -1808,6 +1842,7 @@ function redrawNed(){if(!baseSnap)return;var W=parseInt(document.getElementById(
 function redrawImgs(){nedImgs.forEach(function(im){nctx.drawImage(im.img,im.x,im.y,im.w,im.h);});}
 function flattenImgs(){redrawImgs();nedImgs=[];baseSnap=null;}
 function addImgNed(inp){
+  if(!requireAdd()){inp.value='';return;}
   Array.from(inp.files).forEach(function(f){
     var url=URL.createObjectURL(f),img=new Image();
     img.onload=function(){
@@ -1822,7 +1857,7 @@ function addImgNed(inp){
 function placeTxt(p){var inp=document.getElementById('floattext');inp.style.left=Math.max(0,p.x)+'px';inp.style.top=Math.max(0,p.y-20)+'px';inp.style.display='block';inp.value='';textPos={x:p.x,y:p.y};setTimeout(function(){inp.focus();},50);}
 function commitText(){var inp=document.getElementById('floattext'),txt=inp.value.trim();if(txt&&textPos){var fs=Math.max(14,dsz*5);nctx.font=fs+'px -apple-system,sans-serif';nctx.fillStyle=dcol;txt.split('\n').forEach(function(ln,i){nctx.fillText(ln,textPos.x,textPos.y+(i+0.5)*fs*1.4);});}inp.style.display='none';inp.value='';textPos=null;}
 document.getElementById('floattext').addEventListener('blur',commitText);
-function clearNed(){if(!confirm('Clear canvas?'))return;nedImgs=[];baseSnap=null;var cv=document.getElementById('nedcanvas');nctx.fillStyle='#fff';nctx.fillRect(0,0,cv.width/devicePixelRatio,cv.height/devicePixelRatio);}
+function clearNed(){if(!requireAdd())return;if(!confirm('Clear canvas?'))return;nedImgs=[];baseSnap=null;var cv=document.getElementById('nedcanvas');nctx.fillStyle='#fff';nctx.fillRect(0,0,cv.width/devicePixelRatio,cv.height/devicePixelRatio);}
 function setDC(el){dcol=el.getAttribute('data-color');document.querySelectorAll('.ned-tb .tbcol').forEach(function(b){b.classList.remove('on');});el.classList.add('on');if(dtool==='era')setDT('pen');}
 function setDT(t){
   dtool=t;
@@ -1834,6 +1869,7 @@ function setDT(t){
 }
 function setSz(s){dsz=s;}
 function saveNote(){
+  if(!requireAdd())return;
   flattenImgs();commitText();
   var cv=document.getElementById('nedcanvas'),canvasData=cv.toDataURL('image/jpeg',.85);
   var n=curNoteIdx!==null?D.notes[curNoteIdx]:{};
@@ -1842,7 +1878,7 @@ function saveNote(){
   if(curNoteIdx!==null)D.notes[curNoteIdx]=n;else D.notes.push(n);
   sv();toast('Note saved');go('notes');renderNotes();
 }
-function delNote(){if(!confirm('Delete?'))return;D.notes.splice(curNoteIdx,1);sv();go('notes');renderNotes();toast('Deleted');}
+function delNote(){if(!requireAdmin())return;if(!confirm('Delete?'))return;D.notes.splice(curNoteIdx,1);sv();go('notes');renderNotes();toast('Deleted');}
 
 // ═══════════════════════════════════════════
 // INFO & DOCS
@@ -1850,15 +1886,16 @@ function delNote(){if(!confirm('Delete?'))return;D.notes.splice(curNoteIdx,1);sv
 var priceOk=false;
 function renderInfo(){
   var pr=document.getElementById('pricerows');
-  pr.innerHTML=D.info.pricing.map(function(r,i){return'<div class="prrow"><span style="color:var(--txt2);flex:1">'+r.l+'</span><span class="prv">'+r.v+'</span><button class="ebtn" onclick="openMod(\'editprice\','+i+')">Edit</button></div>';}).join('')+'<div style="margin-top:10px"><button onclick="openMod(\'addprice\')" style="color:var(--blue);font-size:13px;font-weight:500">+ Add row</button></div>';
+  pr.innerHTML=D.info.pricing.map(function(r,i){return'<div class="prrow"><span style="color:var(--txt2);flex:1">'+r.l+'</span><span class="prv">'+r.v+'</span><button class="ebtn need-admin" onclick="openMod(\'editprice\','+i+')">Edit</button></div>';}).join('')+'<div class="need-staff" style="margin-top:10px"><button onclick="openMod(\'addprice\')" style="color:var(--blue);font-size:13px;font-weight:500">+ Add row</button></div>';
   var pc=document.getElementById('prodcards');
-  pc.innerHTML=D.info.products.map(function(p,pi){return'<div class="prodcard"><div class="prodhd" onclick="tglProd(\''+p.id+'\')"><div class="prodem">'+p.emoji+'</div><div class="prodnm">'+p.name+'</div><button class="ebtn" onclick="event.stopPropagation();openMod(\'editprod\','+pi+')" style="margin-right:6px">Edit</button><div class="prodch" id="pc'+p.id+'">›</div></div><div class="prodbody" id="pb'+p.id+'">'+p.specs.map(function(s){return'<div class="sprow"><span class="spl">'+s.l+'</span><span class="spv">'+s.v+'</span></div>';}).join('')+'</div></div>';}).join('');
+  pc.innerHTML=D.info.products.map(function(p,pi){return'<div class="prodcard"><div class="prodhd" onclick="tglProd(\''+p.id+'\')"><div class="prodem">'+p.emoji+'</div><div class="prodnm">'+p.name+'</div><button class="ebtn need-admin" onclick="event.stopPropagation();openMod(\'editprod\','+pi+')" style="margin-right:6px">Edit</button><div class="prodch" id="pc'+p.id+'">›</div></div><div class="prodbody" id="pb'+p.id+'">'+p.specs.map(function(s){return'<div class="sprow"><span class="spl">'+s.l+'</span><span class="spv">'+s.v+'</span></div>';}).join('')+'</div></div>';}).join('');
   renderPDFs();
 }
 function tglProd(id){document.getElementById('pb'+id).classList.toggle('on');document.getElementById('pc'+id).classList.toggle('on');}
 function tglPrice(){if(!priceOk){openPass();return;}var r=document.getElementById('pricerows');var o=r.classList.toggle('on');document.getElementById('parr').textContent=o?'▾':'›';}
-function renderPDFs(){document.getElementById('pdflist').innerHTML=(D.pdfs||[]).map(function(p,i){return'<div class="pdfitem"><div style="font-size:26px;flex-shrink:0">📄</div><div style="flex:1;overflow:hidden"><div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p.name+'</div><div style="font-size:11px;color:var(--txt3)">'+p.size+'</div></div><a href="'+p.url+'" target="_blank" style="color:var(--blue);font-size:13px;font-weight:500;margin-right:8px;flex-shrink:0">Open</a><button class="fdel" onclick="delPDF('+i+')">Delete</button></div>';}).join('');}
+function renderPDFs(){document.getElementById('pdflist').innerHTML=(D.pdfs||[]).map(function(p,i){return'<div class="pdfitem"><div style="font-size:26px;flex-shrink:0">📄</div><div style="flex:1;overflow:hidden"><div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p.name+'</div><div style="font-size:11px;color:var(--txt3)">'+p.size+'</div></div><a href="'+p.url+'" target="_blank" style="color:var(--blue);font-size:13px;font-weight:500;margin-right:8px;flex-shrink:0">Open</a><button class="fdel need-admin" onclick="delPDF('+i+')">Delete</button></div>';}).join('');}
 function addPDF(inp){
+  if(!requireAdd()){inp.value='';return;}
   var files=Array.from(inp.files||[]);
   if(!files.length)return;
   if(!D.pdfs)D.pdfs=[];
@@ -1872,6 +1909,7 @@ function addPDF(inp){
   }).catch(function(){toast('Add failed');inp.value='';});
 }
 function delPDF(i){
+  if(!requireAdmin())return;
   if(!confirm('Delete?'))return;
   var p=D.pdfs[i];if(p&&p.id)MediaStore.del(p.id);
   D.pdfs.splice(i,1);sv();renderPDFs();toast('Deleted');
@@ -1893,24 +1931,47 @@ function updDots(){for(var i=0;i<4;i++)document.getElementById('d'+i).classList.
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('on');},2300);}
 
 // ═══════════════════════════════════════════
-// ACCESS CONTROL (guest gate + admin) — separate from sv5 / pricing PIN
+// ACCESS CONTROL — roles: viewer | staff | admin (separate from sv5 / pricing PIN)
 // ═══════════════════════════════════════════
 function getGuestPass(){
   try{var v=localStorage.getItem(LS_GUEST_PASS);if(v!==null&&v!=='')return v;}catch(e){}
   return DEFAULT_GUEST_PASS;
+}
+function getStaffPass(){
+  try{var v=localStorage.getItem(LS_STAFF_PASS);if(v!==null&&v!=='')return v;}catch(e){}
+  return DEFAULT_STAFF_PASS;
 }
 function getAdminPass(){
   try{var v=localStorage.getItem(LS_ADMIN_PASS);if(v!==null&&v!=='')return v;}catch(e){}
   return DEFAULT_ADMIN_PASS;
 }
 function setGuestPass(v){try{localStorage.setItem(LS_GUEST_PASS,v);}catch(e){toast('Could not save password');}}
+function setStaffPass(v){try{localStorage.setItem(LS_STAFF_PASS,v);}catch(e){toast('Could not save password');}}
 function setAdminPass(v){try{localStorage.setItem(LS_ADMIN_PASS,v);}catch(e){toast('Could not save password');}}
 function isGuestUnlocked(){
   try{return sessionStorage.getItem(SS_GUEST_UNLOCKED)==='1';}catch(e){return false;}
 }
-function isAdminMode(){
-  try{return sessionStorage.getItem(SS_ADMIN_MODE)==='1';}catch(e){return false;}
+function getRole(){
+  try{
+    var r=sessionStorage.getItem(SS_ROLE);
+    if(r===ROLE_STAFF||r===ROLE_ADMIN||r===ROLE_VIEWER)return r;
+    if(sessionStorage.getItem(SS_ADMIN_MODE)==='1')return ROLE_ADMIN;
+  }catch(e){}
+  return ROLE_VIEWER;
 }
+function setRole(r){
+  try{
+    sessionStorage.setItem(SS_ROLE,r);
+    if(r===ROLE_ADMIN)sessionStorage.setItem(SS_ADMIN_MODE,'1');
+    else sessionStorage.removeItem(SS_ADMIN_MODE);
+  }catch(e){}
+  applyRoleUI();
+}
+function isAdminMode(){return getRole()===ROLE_ADMIN;}
+function canAdd(){var r=getRole();return r===ROLE_STAFF||r===ROLE_ADMIN;}
+function canDelete(){return getRole()===ROLE_ADMIN;}
+function requireAdd(){if(!canAdd()){toast('需要同事或管理员登录');return false;}return true;}
+function requireAdmin(){if(!canDelete()){toast('需要管理员权限');return false;}return true;}
 function showGuestGate(){
   var g=document.getElementById('guestgate');
   if(!g)return;
@@ -1924,10 +1985,34 @@ function hideGuestGate(){
   var g=document.getElementById('guestgate');
   if(g)g.classList.remove('on');
 }
-function initGuestGate(){
-  if(isGuestUnlocked()){hideGuestGate();syncAdminUI();return;}
-  showGuestGate();
+function clearEditModes(){
+  ['pg','vg','md','cg'].forEach(function(k){
+    if(!EM[k])return;
+    EM[k]=false;
+    var btnIds={pg:'pgedit',vg:'vgedit',md:'mdedit',cg:'cgedit'};
+    var gridIds={pg:'pgrid',vg:'vgrid',md:'mdgrid',cg:'cgrid'};
+    var btn=document.getElementById(btnIds[k]);
+    if(btn){btn.textContent='Edit';btn.className='nact need-admin';}
+    var grid=document.getElementById(gridIds[k]);
+    if(grid)grid.classList.remove('emode');
+  });
+}
+function applyRoleUI(){
+  var r=getRole();
+  document.body.classList.remove('role-viewer','role-staff','role-admin');
+  document.body.classList.add('role-'+r);
+  if(!canDelete())clearEditModes();
   syncAdminUI();
+}
+function initGuestGate(){
+  if(isGuestUnlocked()){
+    hideGuestGate();
+    if(!sessionStorage.getItem(SS_ROLE)&&!sessionStorage.getItem(SS_ADMIN_MODE))setRole(ROLE_VIEWER);
+    else applyRoleUI();
+    return;
+  }
+  showGuestGate();
+  applyRoleUI();
 }
 function tryGuestUnlock(){
   var inp=document.getElementById('guestpass-input');
@@ -1937,7 +2022,8 @@ function tryGuestUnlock(){
     try{sessionStorage.setItem(SS_GUEST_UNLOCKED,'1');}catch(e){}
     if(err)err.textContent='';
     hideGuestGate();
-    toast('Welcome');
+    setRole(ROLE_VIEWER);
+    toast('欢迎浏览');
   }else{
     if(err)err.textContent='Incorrect password';
     if(inp){inp.value='';inp.focus();}
@@ -1947,18 +2033,18 @@ function syncAdminUI(){
   var fab=document.getElementById('adminfab');
   var tools=document.getElementById('admintools');
   if(!fab||!tools)return;
-  if(isAdminMode()){
-    fab.classList.add('on');
-    fab.textContent='管理中';
-    tools.classList.add('on');
+  var r=getRole();
+  if(r===ROLE_ADMIN){
+    fab.classList.add('on');fab.textContent='管理中';tools.classList.add('on');
+  }else if(r===ROLE_STAFF){
+    fab.classList.add('on');fab.textContent='同事中';tools.classList.add('on');
   }else{
-    fab.classList.remove('on');
-    fab.textContent='管理';
-    tools.classList.remove('on');
+    fab.classList.remove('on');fab.textContent='登录';tools.classList.remove('on');
   }
 }
 function onAdminFab(){
-  if(isAdminMode()){
+  var r=getRole();
+  if(r===ROLE_STAFF||r===ROLE_ADMIN){
     var tools=document.getElementById('admintools');
     if(tools)tools.classList.toggle('on');
     return;
@@ -1968,46 +2054,51 @@ function onAdminFab(){
     var inp=document.getElementById('m-admin-pass');
     if(!inp)return;
     inp.focus();
-    inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();tryAdminUnlock();}};
+    inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();tryRoleUnlock();}};
   },60);
 }
-function tryAdminUnlock(){
+function tryRoleUnlock(){
   var inp=document.getElementById('m-admin-pass');
   var val=(inp&&inp.value)?inp.value:'';
   if(val===getAdminPass()){
-    try{sessionStorage.setItem(SS_ADMIN_MODE,'1');}catch(e){}
-    closeMod();
-    syncAdminUI();
-    toast('Admin mode on');
+    closeMod();setRole(ROLE_ADMIN);toast('管理员模式');
+  }else if(val===getStaffPass()){
+    closeMod();setRole(ROLE_STAFF);toast('同事模式 · 可添加不可删除');
   }else{
-    toast('Incorrect admin password');
+    toast('密码错误');
     if(inp){inp.value='';inp.focus();}
   }
 }
-function exitAdminMode(){
-  try{sessionStorage.removeItem(SS_ADMIN_MODE);}catch(e){}
-  syncAdminUI();
+function exitRoleMode(){
+  setRole(ROLE_VIEWER);
   closeMod();
-  toast('Admin mode off');
+  toast('已退出 · 当前为客户浏览');
 }
 function savePassSettings(){
-  if(!isAdminMode()){toast('Admin mode required');return;}
+  if(!requireAdmin())return;
   var cur=(document.getElementById('m-cur-admin')||{}).value||'';
   var ng=(document.getElementById('m-new-guest')||{}).value||'';
   var ng2=(document.getElementById('m-new-guest2')||{}).value||'';
+  var ns=(document.getElementById('m-new-staff')||{}).value||'';
+  var ns2=(document.getElementById('m-new-staff2')||{}).value||'';
   var na=(document.getElementById('m-new-admin')||{}).value||'';
   var na2=(document.getElementById('m-new-admin2')||{}).value||'';
   if(cur!==getAdminPass()){toast('当前管理员密码不正确');return;}
-  if(!ng&&!na){toast('请填写要修改的新密码');return;}
+  if(!ng&&!ns&&!na){toast('请填写要修改的新密码');return;}
   if(ng||ng2){
     if(ng!==ng2){toast('两次访客密码不一致');return;}
     if(!ng){toast('访客密码不能为空');return;}
+  }
+  if(ns||ns2){
+    if(ns!==ns2){toast('两次同事密码不一致');return;}
+    if(!ns){toast('同事密码不能为空');return;}
   }
   if(na||na2){
     if(na!==na2){toast('两次管理员密码不一致');return;}
     if(!na){toast('管理员密码不能为空');return;}
   }
   if(ng)setGuestPass(ng);
+  if(ns)setStaffPass(ns);
   if(na)setAdminPass(na);
   closeMod();
   toast('密码已保存');

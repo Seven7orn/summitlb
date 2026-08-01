@@ -14,13 +14,14 @@ DEPLOY — Cloudflare Pages
    - Build output directory: /
 5. Deploy. Site will be available at your *.pages.dev URL
 
-DEFAULT PASSWORDS
------------------
-Visitor gate:   summit2026
-Admin mode:     admin0000
-Pricing PIN:    0000
+ROLES & DEFAULT PASSWORDS
+-------------------------
+Visitor (view only):  summit2026   — enter site, browse only
+Staff (add only):     staff0000    — home → 登录 → staff password
+Admin (full):         admin0000    — home → 登录 → admin password
+Pricing PIN:          0000         — unlock pricing details (unchanged)
 
-Passwords can be changed in Admin → 密码设置 (stored in browser localStorage).
+Admin can change all passwords via 登录 → 密码设置 (localStorage).
 
 NOTES
 -----
