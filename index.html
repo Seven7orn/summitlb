@@ -535,8 +535,57 @@ function ensureThree(cb){
   })(0);
 }
 // ═══════════════════════════════════════════
+// CLOUD SYNC (R2 via Pages Functions)
+// ═══════════════════════════════════════════
+var R2_PUBLIC_BASE='https://pub-06c603040a1d4437a815f7a9e2e39790.r2.dev';
+var CloudSync=(function(){
+  function enabled(){return location.protocol!=='file:';}
+  function authHeaders(){
+    try{
+      var r=sessionStorage.getItem('summitRole')||'viewer';
+      if(r!=='staff'&&r!=='admin')return {};
+      var pass=localStorage.getItem(r==='admin'?'adminPass':'staffPass');
+      if(pass===null||pass==='')pass=r==='admin'?'admin0000':'staff0000';
+      return{'X-Summit-Role':r,'X-Summit-Auth':pass};
+    }catch(e){return {};}
+  }
+  function loadManifest(){
+    return fetch('/api/manifest',{cache:'no-store'}).then(function(r){
+      if(!r.ok)throw new Error('manifest '+r.status);
+      return r.json();
+    });
+  }
+  function saveManifest(data){
+    return fetch('/api/manifest',{
+      method:'PUT',
+      headers:Object.assign({'Content-Type':'application/json'},authHeaders()),
+      body:JSON.stringify(data)
+    }).then(function(r){
+      if(!r.ok)throw new Error('manifest save '+r.status);
+      return r.json();
+    });
+  }
+  function uploadFile(file,id){
+    var fd=new FormData();
+    fd.append('file',file);
+    fd.append('id',id);
+    return fetch('/api/upload',{method:'POST',headers:authHeaders(),body:fd}).then(function(r){
+      return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('upload '+r.status));return j;});
+    });
+  }
+  function deleteMedia(id){
+    return fetch('/api/media/'+encodeURIComponent(id),{method:'DELETE',headers:authHeaders()}).then(function(r){
+      if(!r.ok)throw new Error('delete '+r.status);
+      return r.json();
+    });
+  }
+  function isCloudUrl(u){return u&&typeof u==='string'&&/^https?:\/\//.test(u)&&u.indexOf('blob:')!==0;}
+  return {enabled:enabled,loadManifest:loadManifest,saveManifest:saveManifest,uploadFile:uploadFile,deleteMedia:deleteMedia,isCloudUrl:isCloudUrl,publicBase:R2_PUBLIC_BASE};
+})();
+// ═══════════════════════════════════════════
 // MEDIA STORE
 // Videos: Cache API + memory Blob (Android-safe). Others: IndexedDB.
+// Cloud: uploads go to R2 when staff/admin is logged in.
 // ═══════════════════════════════════════════
 var MediaStore=(function(){
   var DB='summit_media_v1',STORE='files',CACHE_NAME='summit-media-cache-v1';
@@ -591,6 +640,9 @@ var MediaStore=(function(){
     return caches.open(CACHE_NAME).then(function(c){return c.delete(cacheUrl(id));}).catch(function(){});
   }
   function del(id){
+    if(CloudSync.enabled()&&typeof canDelete==='function'&&canDelete()&&id){
+      CloudSync.deleteMedia(id).catch(function(e){console.warn('R2 delete failed',e);});
+    }
     if(urlCache[id]){try{URL.revokeObjectURL(urlCache[id]);}catch(e){}delete urlCache[id];}
     delete live[id];
     cacheDel(id);
@@ -678,10 +730,10 @@ var MediaStore=(function(){
     if(data instanceof Blob||data instanceof File)return freshUrlFromBlob(data,mimeHint||data.type);
     return Promise.resolve(null);
   }
-  function saveFile(file,kind){
+  function saveFileLocal(file,kind,presetId){
     if(!file)return Promise.reject(new Error('no file'));
     if(!file.size)return Promise.reject(new Error('empty file'));
-    var id='f_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
+    var id=presetId||('f_'+Date.now()+'_'+Math.random().toString(36).slice(2,9));
     var type=(file.type&&file.type!=='application/octet-stream')?file.type:guessMime(file.name,kind);
     if(kind==='video'&&(!type||type==='application/octet-stream'))type='video/mp4';
     return readAsBuffer(file).then(function(buf){
@@ -689,7 +741,6 @@ var MediaStore=(function(){
       var blob=new Blob([buf],{type:type||'application/octet-stream'});
       live[id]=blob;
       var record={buf:buf,type:type,name:file.name||'',kind:kind||'',size:buf.byteLength};
-      // Videos: Cache API first (Chromium media-friendly), then IDB backup
       var persist=cachePut(id,blob,type).then(function(){return put(id,record);},function(){return put(id,record);});
       return persist.then(function(){
         if(urlCache[id]){try{URL.revokeObjectURL(urlCache[id]);}catch(e){}}
@@ -697,6 +748,20 @@ var MediaStore=(function(){
         return {id:id,url:urlCache[id],type:type,size:buf.byteLength};
       });
     });
+  }
+  function saveFile(file,kind){
+    if(!file)return Promise.reject(new Error('no file'));
+    if(!file.size)return Promise.reject(new Error('empty file'));
+    var id='f_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
+    if(CloudSync.enabled()&&typeof canAdd==='function'&&canAdd()){
+      return CloudSync.uploadFile(file,id).then(function(res){
+        return {id:res.id,url:res.url,type:res.type||guessMime(file.name,kind),size:res.size};
+      }).catch(function(err){
+        console.warn('R2 upload failed, using local storage',err);
+        return saveFileLocal(file,kind,id);
+      });
+    }
+    return saveFileLocal(file,kind,id);
   }
   function resolveUrl(id,force,mimeHint){
     if(!id)return Promise.resolve(null);
@@ -827,21 +892,7 @@ const PRICEDEF=[
   {l:'Ship · East Coast',v:'~$1,100+'},{l:'Custom lead time',v:'~10 weeks'}
 ];
 
-function loadData(){
-  try{
-    const s=JSON.parse(localStorage.getItem('sv5')||'null');
-    if(s){
-      if(!s.cats)s.cats=CATDEF.map(function(c){return Object.assign({},c);});
-      if(!s.photoFolders)s.photoFolders={'Bifold Door':[],'Sliding Door':[],'Entry Door':[],'Garage Door':[],'Windows':[],'Iron Door':[]};
-      if(!s.videoFolders)s.videoFolders={'Product Demos':[],'Installation':[]};
-      if(!s.caseFolders)s.caseFolders={'Residential':[],'Commercial':[]};
-      if(!s.models)s.models=[];
-      if(!s.notes)s.notes=[];
-      if(!s.pdfs)s.pdfs=[];
-      if(!s.info)s.info={pricing:PRICEDEF.slice(),products:PRODDEF.map(function(p){return Object.assign({},p,{specs:p.specs.slice()});})};
-      return s;
-    }
-  }catch(e){}
+function defaultData(){
   return {
     hero:{title:'PRODUCT LIBRARY',sub:'Windows & Doors · Brea, CA',img:null,logo:null,logoTxt:'SUMMIT'},
     cats:CATDEF.map(function(c){return Object.assign({},c);}),
@@ -852,7 +903,41 @@ function loadData(){
     info:{pricing:PRICEDEF.slice(),products:PRODDEF.map(function(p){return Object.assign({},p,{specs:p.specs.slice()});})}
   };
 }
-var D=loadData();
+function mergeDefaults(s){
+  if(!s||typeof s!=='object')return defaultData();
+  if(!s.cats)s.cats=CATDEF.map(function(c){return Object.assign({},c);});
+  if(!s.photoFolders)s.photoFolders={'Bifold Door':[],'Sliding Door':[],'Entry Door':[],'Garage Door':[],'Windows':[],'Iron Door':[]};
+  if(!s.videoFolders)s.videoFolders={'Product Demos':[],'Installation':[]};
+  if(!s.caseFolders)s.caseFolders={'Residential':[],'Commercial':[]};
+  if(!s.models)s.models=[];
+  if(!s.notes)s.notes=[];
+  if(!s.pdfs)s.pdfs=[];
+  if(!s.info)s.info={pricing:PRICEDEF.slice(),products:PRODDEF.map(function(p){return Object.assign({},p,{specs:p.specs.slice()});})};
+  if(!s.hero)s.hero=defaultData().hero;
+  return s;
+}
+function loadData(){
+  try{
+    const s=JSON.parse(localStorage.getItem('sv5')||'null');
+    if(s)return mergeDefaults(s);
+  }catch(e){}
+  return defaultData();
+}
+function loadDataFromCloud(){
+  if(!CloudSync.enabled())return Promise.resolve(loadData());
+  return CloudSync.loadManifest().then(function(cloud){
+    if(cloud&&typeof cloud==='object'){
+      var merged=mergeDefaults(cloud);
+      try{localStorage.setItem('sv5',JSON.stringify(stripDeadUrls(merged)));}catch(e){}
+      return merged;
+    }
+    return loadData();
+  }).catch(function(err){
+    console.warn('Cloud manifest load failed, using local',err);
+    return loadData();
+  });
+}
+var D=defaultData();
 
 function stripDeadUrls(obj){
   if(!obj||typeof obj!=='object')return obj;
@@ -869,12 +954,20 @@ function stripDeadUrls(obj){
   return out;
 }
 function sv(){
-  try{localStorage.setItem('sv5',JSON.stringify(stripDeadUrls(D)));}
+  var payload=stripDeadUrls(D);
+  try{localStorage.setItem('sv5',JSON.stringify(payload));}
   catch(e){try{toast('Storage full — large files kept in this session only');}catch(e2){}}
+  if(CloudSync.enabled()&&typeof canAdd==='function'&&canAdd()){
+    CloudSync.saveManifest(payload).catch(function(err){
+      console.warn('Cloud manifest save failed',err);
+      try{toast('Cloud sync failed — saved locally only');}catch(e){}
+    });
+  }
 }
 
 function hydrateItem(item){
   if(!item||typeof item!=='object')return Promise.resolve();
+  if(CloudSync.isCloudUrl(item.url))return Promise.resolve();
   if(item.id){
     var hint=item.type||MediaStore.guessMime(item.name,item.kind)||'';
     return MediaStore.resolveUrl(item.id,true,hint).then(function(url){item.url=url||'';});
@@ -896,13 +989,16 @@ function hydrateMedia(){
   (D.models||[]).forEach(function(m){jobs.push(hydrateItem(m));});
   (D.pdfs||[]).forEach(function(p){jobs.push(hydrateItem(p));});
   if(D.hero){
-    if(D.hero.imgId)jobs.push(MediaStore.resolveUrl(D.hero.imgId).then(function(u){if(u)D.hero.img=u;}));
+    if(D.hero.imgId&&CloudSync.isCloudUrl(D.hero.img)){}
+    else if(D.hero.imgId)jobs.push(MediaStore.resolveUrl(D.hero.imgId).then(function(u){if(u)D.hero.img=u;}));
     else if(MediaStore.isDeadBlob(D.hero.img))D.hero.img=null;
-    if(D.hero.logoId)jobs.push(MediaStore.resolveUrl(D.hero.logoId).then(function(u){if(u)D.hero.logo=u;}));
+    if(D.hero.logoId&&CloudSync.isCloudUrl(D.hero.logo)){}
+    else if(D.hero.logoId)jobs.push(MediaStore.resolveUrl(D.hero.logoId).then(function(u){if(u)D.hero.logo=u;}));
     else if(MediaStore.isDeadBlob(D.hero.logo))D.hero.logo=null;
   }
   (D.cats||[]).forEach(function(c){
-    if(c.bgId)jobs.push(MediaStore.resolveUrl(c.bgId).then(function(u){if(u)c.bg=u;}));
+    if(c.bgId&&CloudSync.isCloudUrl(c.bg)){}
+    else if(c.bgId)jobs.push(MediaStore.resolveUrl(c.bgId).then(function(u){if(u)c.bg=u;}));
     else if(MediaStore.isDeadBlob(c.bg))c.bg=null;
   });
   return Promise.all(jobs);
@@ -2112,10 +2208,14 @@ window.addEventListener('DOMContentLoaded',function(){
   var gin=document.getElementById('guestpass-input');
   if(gin)gin.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();tryGuestUnlock();}});
   MediaStore.open().catch(function(){});
-  hydrateMedia().then(function(){
+  loadDataFromCloud().then(function(data){
+    D=data;
+    return hydrateMedia();
+  }).then(function(){
     renderHome();
     fitHome();
   }).catch(function(){
+    D=loadData();
     renderHome();
     fitHome();
   });

@@ -1,0 +1,16 @@
+# Cloudflare Pages — bind R2 in Dashboard: Settings → Functions → R2 bucket bindings
+# Variable name must be: BUCKET → bucket summitlb
+
+name = "summitlb"
+compatibility_date = "2024-08-01"
+pages_build_output_dir = "."
+
+[vars]
+R2_PUBLIC_URL = "https://pub-06c603040a1d4437a815f7a9e2e39790.r2.dev"
+ADMIN_PASS = "admin0000"
+STAFF_PASS = "staff0000"
+
+# Local dev with: npx wrangler pages dev .
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "summitlb"
